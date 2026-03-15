@@ -20,7 +20,7 @@ SOMI Sentinel is a cutting-edge **reactive DeFi guardian** engineered specifical
 
 **Key Features:**
 - ⚡ **Sub-second latency** - Events appear in UI < 1 second after on-chain execution.
-- 🔴 **Zero polling** - Uses native `somnia_subscribe` for autonomous RDS push notifications.
+- 🔴 **Zero polling** - Uses official `@somnia-chain/reactivity` SDK for autonomous RDS push notifications.
 - 📊 **Real-time charts** - Live candlestick visualization of position health.
 - 🐋 **Whale detection** - On-chain intelligence for large-scale movements.
 - 🛡️ **Autonomous protection** - Instantly reacts to volatility in the data stream.
@@ -32,14 +32,19 @@ SOMI Sentinel is a cutting-edge **reactive DeFi guardian** engineered specifical
 
 SOMI Sentinel is built entirely around the **Somnia Reactivity** paradigm, moving away from legacy HTTP/RPC polling.
 
-### 1. Unified Event Stream (`somnia_subscribe`)
-The backend service establishes a persistent WebSocket connection to the Somnia node. By calling `somnia_subscribe` with the `RDS` parameter, we receive a real-time stream of all relevant smart contract events (deposits, price changes, whale transfers) directly from the Somnia Native Data Stream.
+### 1. Unified Event Stream (Somnia Reactivity SDK)
+The backend service utilizes the official `@somnia-chain/reactivity` SDK to establish a persistent WebSocket connection. By subscribing to specific contract sources, we receive a real-time stream of all relevant smart contract events (deposits, price changes, whale transfers) directly from the Somnia Native Data Stream.
 
-// wss://dream-rpc.somnia.network/ws
-ws.send(JSON.stringify({
-  method: "somnia_subscribe",
-  params: ["RDS", { eventFilter: { address: [MOCK_TOKEN, LENDING_POOL, GUARDIAN] } }]
-}));
+```typescript
+// Initializing Somnia SDK with Viem
+const sdk = new SomniaSDK({ public: viemClient });
+
+sdk.subscribe({
+  eventContractSources: [MOCK_TOKEN, LENDING_POOL, GUARDIAN],
+  onData: (data) => {
+    // Instant event processing without legacy polling
+  }
+});
 ```
 
 ### 2. Same-Block Delivery
@@ -68,11 +73,11 @@ graph TB
     
     subgraph "Somnia Reactivity Layer"
         D[Somnia Node<br/>wss://dream-rpc.somnia.network/ws]
-        E[somnia_subscribe<br/>Reactive Data Stream (RDS)]
+        E["@somnia-chain/reactivity SDK<br/>Native Data Stream (RDS)"]
     end
     
     subgraph "Off-Chain Services"
-        F[Reactivity Service<br/>TypeScript + ethers.js<br/>localhost:3001]
+        F["Reactivity Service<br/>TypeScript + SDK + Viem"]
         G[Event Decoder<br/>ABI Parser]
         H[WebSocket Broadcaster]
     end
@@ -89,7 +94,7 @@ graph TB
     B -->|emits events| D
     C -->|emits events| D
     D -->|PUSH via WebSocket| E
-    E -->|same-block delivery| F
+    E -->|Reactive Data Stream| F
     F --> G
     G --> H
     H -->|ws://localhost:3001| I
